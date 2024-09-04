@@ -2,7 +2,11 @@
 '''
 
 import rlcard
-from rlcard.agents import RandomAgent as RandomAgent
+import torch
+from rlcard.utils import get_device
+from rlcard import models
+from rlcard.agents import DQNAgent as DQNAgent
+#from rlcard.agents import RandomAgent as RandomAgent
 from rlcard.agents import BlackjackHumanAgent as HumanAgent
 from rlcard.utils.utils import print_card
 
@@ -15,11 +19,14 @@ env = rlcard.make(
     },
 )
 human_agent = HumanAgent(env.num_actions)
-random_agent = RandomAgent(env.num_actions)
+# random_agent = RandomAgent(env.num_actions)
+dqn_agent = torch.load('experiments/blackjack_dqn_result/model.pth')
 env.set_agents([
     human_agent,
-    random_agent,
+    dqn_agent,
 ])
+
+chips_tally = [0] * num_players
 
 print(">> Blackjack human agent")
 
@@ -29,6 +36,9 @@ while (True):
     trajectories, payoffs = env.run(is_training=False)
     # If the human does not take the final action, we need to
     # print other players action
+
+    for i in range(num_players):
+        chips_tally[i] += payoffs[i]
 
     if len(trajectories[0]) != 0:
         final_state = []
@@ -64,5 +74,10 @@ while (True):
         else:
             print('Player {} lose {} chip!'.format(i, -payoffs[i]))
         print('')
+    
+    print('===============   Chips Tally   ===============')
+    for i in range(num_players):
+        print('Player {} has won {} total chips'.format(i, chips_tally[i]))
+    print('')
 
     input("Press any key to continue...")
